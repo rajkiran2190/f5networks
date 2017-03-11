@@ -1,19 +1,12 @@
 package f5networks;
 
-import java.io.BufferedReader;
+
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.StringWriter;
 import java.util.Base64;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -69,10 +62,7 @@ public class XMLparsing {
 			Transformer transformer = transformerFactory.newTransformer();
 			DOMSource source = new DOMSource(doc);
 			StreamResult result = new StreamResult(new File(filename));
-			transformer.transform(source, result);
-
-
-			
+			transformer.transform(source, result);			
 				
 		} catch (IOException e) {			
 			e.printStackTrace();
@@ -94,51 +84,7 @@ public class XMLparsing {
 
 	}
 	
-	private static byte[] compress(byte[] source)  {
-	    if (source == null || source.length == 0) {
-	        return source;
-	    }
-
-	    ByteArrayInputStream sourceStream = new ByteArrayInputStream(source);
-	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream(source.length / 2);
-	    OutputStream compressor = null;
-
-	    try {
-			compressor = new GZIPOutputStream(outputStream);
-		    compressor.write(source);
-		    compressor.close();	 
-		    return outputStream.toByteArray();
-		} catch (IOException e) {
-
-			e.printStackTrace();
-		}
-		return null;
-	}
-	private static String decompress( byte[] source ){
-		
-		byte[] valueDecoded = Base64.getDecoder().decode(source );
-		System.out.println("Decoded value is " + new String(valueDecoded));
-		ByteArrayInputStream sourceStream = new ByteArrayInputStream(valueDecoded);
-	    
-	    GZIPInputStream decompressor = null;
-
-	    try {
-			decompressor = new GZIPInputStream(sourceStream);
-			String readed = new String();
-			byte[] buffer = new byte[1024];
-	        while ( decompressor.read( buffer ) != -1) {
-	        	readed += new String( buffer, "UTF-8");	            
-	        }
-	        System.out.println(readed);
-	        decompressor.close();		   		 	 
-		    return readed;
-		} catch (IOException e) {
-
-			e.printStackTrace();
-		}
-		return null;
-
-	}
+	
 	
 	
 	
@@ -157,32 +103,16 @@ public class XMLparsing {
 	
 	
 	private static void compressNode( Node subNode ){
-		/*
-		NodeList childList = subNode.getChildNodes();
-    	String output = new String();
-    	if( childList.getLength() == 0 ) {
-    		output = nodeToString( subNode );
-    	}
-    	else {
-    		for(int iter = 0; iter < childList.getLength(); iter++) {
-    			Node child = childList.item(iter);
-    			output += nodeToString( child );   			
-    		}
-    	}
-    	*/
+		
 		String output = new String();
-		output = nodeToString( subNode );
+		output = nodeToString( subNode ).trim();
     	System.out.println(output);
     	System.out.println("\n\n");
-    	
-    	byte[] compressedBytes = compress(output.trim().getBytes());
-    	
-    	byte[]   bytesEncoded = Base64.getEncoder().encode(compressedBytes);
+       
+    	byte[]   bytesEncoded = Base64.getEncoder().encode(output.getBytes());
     	
     	String compressedout = new String(bytesEncoded );
-    	System.out.println("ecncoded value is " + compressedout);
-
-    	
+    	System.out.println("ecncoded value is " + compressedout);   	
     	subNode.setTextContent(compressedout);
 	}
 
@@ -201,9 +131,7 @@ public class XMLparsing {
 	                NamedNodeMap nnm = subNode.getAttributes();
 
 	                for (int j = 0; j < nnm.getLength(); j++) {
-	                    Node attrNode = nnm.item(j);
-	                    
-
+	                    Node attrNode = nnm.item(j);	                  
 	                    if (attrNode.getNodeType() == Node.ATTRIBUTE_NODE) {
 	                        Attr attribute = (Attr) attrNode;
 	                        
@@ -225,32 +153,27 @@ public class XMLparsing {
 	    }
 	}
 
-	private static void decompressNode(Node subNode) {
-		
-		
-		
-		
+	private static void decompressNode(Node subNode) {		
 		try {
-			String decompressed = decompress(subNode.getTextContent().trim().getBytes("utf-8"));	
+			byte[] valueDecoded = Base64.getDecoder().decode(subNode.getTextContent().getBytes() );
+			String decodedString = new String(valueDecoded);
+			System.out.println("Decoded value is " + decodedString );
 			DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 			Node parent = subNode.getParentNode();
 			Document doc = parent.getOwnerDocument();
 
-			System.out.println("rajkran" + decompressed);
-			Node fragment = docBuilder.parse(new ByteArrayInputStream(decompressed.trim().getBytes("utf-8"))).getDocumentElement();
-			fragment = doc.importNode(fragment, true);
-
-
-
-			parent.removeChild(subNode);
-			parent.appendChild(fragment);
+			System.out.println("rajkiran" + decodedString);
+			Node fragment = docBuilder.parse(new ByteArrayInputStream(decodedString.getBytes())).getDocumentElement();
+			fragment = doc.importNode(fragment, true);			
+			parent.replaceChild(fragment, subNode);
+			
 
 		} catch (SAXException | IOException e) {
-			// TODO Auto-generated catch block
+			
 			e.printStackTrace();
 		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
+			
 			e.printStackTrace();
 		}
 
